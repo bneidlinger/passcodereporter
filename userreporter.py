@@ -7,7 +7,7 @@ import os
 import html  # For HTML escaping
 import json  # For safe JSON encoding
 
-# Parse Bosch TXT file
+# Parse security system TXT file
 def parse_bosch_txt(filepath):
     # Validate file path
     if not os.path.isfile(filepath):
@@ -24,7 +24,7 @@ def parse_bosch_txt(filepath):
                     user_id_part = parts[0]  # "User 0"
                     user_id = user_id_part.replace("User ", "")
                     
-                    # Fix Bosch's weird spacing in usernames
+                    # Fix weird spacing in usernames from export
                     # Remove spaces that appear to be in the middle of words
                     raw_name = parts[1]
                     # Remove spaces between letter characters that appear to be breaking words
@@ -977,7 +977,7 @@ function exportHTML() {{
     let blob = new Blob([html], {{type: "text/html"}});
     let a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "Bosch_Report_" + new Date().toISOString().slice(0,10) + ".html";
+    a.download = "Security_Report_" + new Date().toISOString().slice(0,10) + ".html";
     a.click();
     alert("Report exported successfully!");
   }}
@@ -998,7 +998,7 @@ document.getElementById("pwdInput")?.addEventListener("keypress", function(e) {{
 # Enhanced Tkinter GUI with retro DOS theme
 def run_gui():
     root = tk.Tk()
-    root.title("BOSCH SECURITY SYSTEMS - REPORT GENERATOR v2.0")
+    root.title("SECURITY SYSTEM - PASSCODE REPORT GENERATOR v2.0")
     root.geometry("700x450")
     root.resizable(False, False)
     
@@ -1019,7 +1019,7 @@ def run_gui():
     
     # ASCII Art Header  
     header_text = """╔══════════════════════════════════════════════════════════════════╗
-║          BOSCH SECURITY SYSTEMS - ACCESS CONTROL                 ║
+║         SECURITY SYSTEM - ACCESS CONTROL MANAGER                 ║
 ║                   REPORT GENERATOR v2.0                          ║
 ╚══════════════════════════════════════════════════════════════════╝"""
     
@@ -1120,7 +1120,7 @@ def run_gui():
             
             html = generate_html(data, pwd_entry.get(), logo_data)
             
-            default_name = f"Bosch_Report_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.html"
+            default_name = f"Security_Report_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.html"
             save_path = filedialog.asksaveasfilename(
                 defaultextension=".html",
                 initialfile=default_name,
@@ -1148,7 +1148,7 @@ def run_gui():
     generate_btn.pack()
     
     # Footer
-    footer_text = "─" * 70 + "\nBOSCH SECURITY SYSTEMS (C) 2024 - AUTHORIZED USE ONLY"
+    footer_text = "─" * 70 + "\nCreated by: A Physical Security Engineer © 2025"
     footer_label = tk.Label(main_frame, text=footer_text, font=('Courier', 9), 
                            bg=bg_color, fg="#666666", justify="center")
     footer_label.grid(row=7, column=0, columnspan=3, pady=(20, 0))

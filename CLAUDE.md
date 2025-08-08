@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bosch Security Systems Report Generator - A Python application that parses Bosch B9512G panel user export files and generates interactive HTML reports with access control data.
+Security System Report Generator - A Python application that parses security system user export files and generates interactive HTML reports with access control data.
 
 ## Core Architecture
 
 Single-file Python application (`userreporter.py`) with three main components:
 
-1. **Parser**: `parse_bosch_txt()` - Handles Bosch's peculiar text format with:
+1. **Parser**: `parse_bosch_txt()` - Handles the security system's text format with:
    - Comma-separated values with inconsistent spacing
    - User data deduplication by User ID
    - Automatic filtering of placeholder users (User* with no passcode)
@@ -36,7 +36,7 @@ python userreporter.py
 
 ## Data Format
 
-Input: Bosch TXT export files with format:
+Input: Security system TXT export files with format:
 - Header lines with account info
 - User data lines: `User [ID],User Nam e ,Pass code ,[groups/access],A1-A8 Auth levels`
 - Multiple pages separated by timestamp lines

@@ -4,9 +4,15 @@ import base64
 import re
 from datetime import datetime
 import os
+import html  # For HTML escaping
+import json  # For safe JSON encoding
 
 # Parse Bosch TXT file
 def parse_bosch_txt(filepath):
+    # Validate file path
+    if not os.path.isfile(filepath):
+        raise ValueError("Invalid file path")
+    
     seen_users = {}  # Track unique users by User ID to avoid duplicates
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
@@ -64,6 +70,10 @@ def process_logo(image_path):
     Note: Without PIL, we cannot resize images. Users should provide images under 100KB.
     """
     try:
+        # Validate file path
+        if not os.path.isfile(image_path):
+            raise ValueError("Invalid image file path")
+            
         with open(image_path, "rb") as image_file:
             img_data = image_file.read()
             
@@ -82,17 +92,9 @@ def process_logo(image_path):
                 
         # Determine image type from file extension
         ext = os.path.splitext(image_path)[1].lower()
-        if ext in ['.png']:
-            mime_type = 'png'
-        elif ext in ['.jpg', '.jpeg']:
-            mime_type = 'jpeg'
-        elif ext in ['.gif']:
-            mime_type = 'gif'
-        elif ext in ['.webp']:
-            mime_type = 'webp'
-        else:
-            # Default to png if unknown
-            mime_type = 'png'
+        mime_types = {'.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', 
+                      '.gif': 'gif', '.webp': 'webp'}
+        mime_type = mime_types.get(ext, 'png')  # Default to png if unknown
             
         return base64.b64encode(img_data).decode("utf-8"), mime_type
     except Exception as e:
@@ -103,7 +105,7 @@ def process_logo(image_path):
 def generate_html(data, password="", logo_data=None):
     # Table rows
     table_rows = ""
-    for i, row in enumerate(data):
+    for row in data:
         # Parse auth value - extract number from "A1", "A2", etc., or default to "None"
         auth_value = row[2]
         if auth_value.startswith("A") and len(auth_value) == 2 and auth_value[1].isdigit():
@@ -119,8 +121,8 @@ def generate_html(data, password="", logo_data=None):
         
         table_rows += f"""
         <tr>
-            <td class="editable-cell" contenteditable='true'>{row[0]}</td>
-            <td class="editable-cell passcode-cell" contenteditable='true'>{row[1]}</td>
+            <td class="editable-cell" contenteditable='true'>{html.escape(row[0])}</td>
+            <td class="editable-cell passcode-cell" contenteditable='true'>{html.escape(row[1])}</td>
             <td class="auth-cell">
                 <select class="auth-select" onchange="markModified(this)">
                     {''.join(auth_options)}
@@ -135,7 +137,9 @@ def generate_html(data, password="", logo_data=None):
     logo_html = ""
     if logo_data:
         logo_b64, mime_type = logo_data
-        logo_html = f"""
+        # Validate mime type to prevent injection
+        if mime_type in ['png', 'jpeg', 'gif', 'webp']:
+            logo_html = f"""
     <div class="header-logo">
         <img src='data:image/{mime_type};base64,{logo_b64}' alt="Company Logo">
     </div>"""
@@ -146,6 +150,7 @@ def generate_html(data, password="", logo_data=None):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
 <title>Security System Passcode Manager</title>
 <style>
 * {{
@@ -549,18 +554,6 @@ tr:hover {{
     background-color: #fef3c7;
 }}
 
-.modified-badge {{
-    display: inline-block;
-    background: #f59e0b;
-    color: white;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 8px;
-    font-weight: 600;
-    text-transform: uppercase;
-}}
-
 .deleted {{
     background-color: #fef2f2;
     position: relative;
@@ -688,21 +681,6 @@ tr:hover {{
     border-color: #0f172a;
 }}
 
-/* Empty State */
-.empty-state {{
-    padding: 48px;
-    text-align: center;
-    color: #94a3b8;
-}}
-
-.empty-icon {{
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 16px;
-    background: #f1f5f9;
-    border-radius: 50%;
-}}
-
 /* Responsive Design */
 @media (max-width: 768px) {{
     .main-container {{
@@ -751,7 +729,7 @@ tr:hover {{
   <div class="app-header">
     <div class="header-content">
       <div class="header-left">
-        {f'<div class="header-logo">{logo_html.replace('<div class="header-logo">', "").replace("</div>", "")}</div>' if logo_data else ''}
+        {logo_html if logo_data else ''}
         <div class="app-title">Security System Passcode Manager</div>
       </div>
       <div class="header-stats">
@@ -807,7 +785,7 @@ tr:hover {{
   </div>
 </div>
 <script>
-let PASSWORD = "{password}";
+let PASSWORD = {json.dumps(password) if password else '""'};
 let currentPage = 1;
 const rowsPerPage = 50;
 const table = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
@@ -856,7 +834,7 @@ function paginateTable() {{
   const totalPages = Math.ceil(rows.length / rowsPerPage);
   
   // Hide all rows first
-  Array.from(table.rows).forEach(row => row.style.display = "none");
+  rows.forEach(row => row.style.display = "none");
   
   // Show rows for current page (including deleted ones)
   const start = (currentPage - 1) * rowsPerPage;
